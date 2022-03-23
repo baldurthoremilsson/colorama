@@ -81,12 +81,11 @@ class Colorama {
             }
             this.board.push(row);
         }
-        this.frontier = [
-            new Tile(0, 1),
-            new Tile(1, 0)
-        ];
-        this.color = this.board[0][0];
-        this.board[0][0] = null;
+        let startPos = new Tile(0,0);
+        this.color = this.board[startPos.x][startPos.y];
+        this.board[startPos.x][startPos.y] = null;
+        this.frontier = this.neighbors(startPos);
+        this.pick(this.color);
         this.clicks = 0;
     }
 
