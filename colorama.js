@@ -70,6 +70,7 @@ class Colorama {
         this.frontier = [];
         this.color = null;
         this.clicks = 0;
+        this.interactive = false;
     }
 
     initialize() {
@@ -87,21 +88,29 @@ class Colorama {
         this.frontier = this.neighbors(startPos);
         this.pick(this.color);
         this.clicks = 0;
+        this.interactive = true;
     }
 
-    pick(color) {
-        const stack = this.frontier;
-        this.frontier = [];
-        while(stack.length > 0) {
-            let tile = stack.pop();
-            if(this.board[tile.x][tile.y] === color) {
-                this.board[tile.x][tile.y] = null;
-                stack.push(...this.neighbors(tile));
-            } else if(this.board[tile.x][tile.y] !== null) {
-                this.frontier.push(tile);
-            }
+    pick(color, callback) {
+        if(!this.interactive) {
+            return;
         }
+        this.interactive = false;
         this.color = color;
+        setTimeout(() => {
+            const stack = this.frontier;
+            this.frontier = [];
+            while(stack.length > 0) {
+                let tile = stack.pop();
+                if(this.board[tile.x][tile.y] === color) {
+                    this.board[tile.x][tile.y] = null;
+                    stack.push(...this.neighbors(tile));
+                } else if(this.board[tile.x][tile.y] !== null) {
+                    this.frontier.push(tile);
+                }
+            }
+            this.interactive = true;
+        }, 100);
         this.clicks += 1;
     }
 
@@ -148,7 +157,7 @@ class Board {
             button.classList.add("button");
             button.style.backgroundColor = color;
             button.addEventListener("click", event => {
-                colorama.pick(color);
+                colorama.pick(color, () => this.update(colorama));
                 this.update(colorama);
             });
             this.controls_el.appendChild(button);
