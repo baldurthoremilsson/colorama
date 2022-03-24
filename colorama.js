@@ -95,8 +95,11 @@ class Colorama {
         this.board.initialize(this);
     }
 
-    pick(color, callback) {
+    pick(color) {
         if(!this.interactive) {
+            return;
+        }
+        if(this.color === color) {
             return;
         }
         this.interactive = false;
@@ -161,7 +164,7 @@ class Board {
             button.classList.add("button");
             button.style.backgroundColor = color;
             button.addEventListener("click", event => {
-                colorama.pick(color, () => this.update(colorama));
+                colorama.pick(color);
                 this.update(colorama);
             });
             this.controls_el.appendChild(button);
