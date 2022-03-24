@@ -24,24 +24,20 @@ const random = array => array[Math.floor(Math.random() * array.length)];
 
 document.addEventListener("DOMContentLoaded", () => {
     const getSize = () => document.querySelector("#size-selector").value.split("x");
-    const colorama = new Colorama(getSize, COLORS);
-    colorama.initialize();
-
     const board = new Board(
         document.querySelector("#game"),
         document.querySelector("#controls"),
         document.querySelector("#click-counter")
     );
-    board.initialize(colorama);
+    const colorama = new Colorama(getSize, COLORS, board);
+    colorama.initialize();
 
-    document.querySelector("#new-game").addEventListener("click", event => {
-        colorama.initialize();
-        board.initialize(colorama);
-    });
+    document.querySelector("#new-game").addEventListener("click", event => colorama.initialize());
+    document.querySelector("#size-selector").addEventListener("change", event => colorama.initialize());
 });
 
 
-class Tile {
+class Pos {
     constructor(x, y) {
         this.x = x;
         this.y = y;
@@ -53,22 +49,23 @@ class Tile {
     }
 
     neighbors() {
-        let up = new Tile(this.x, this.y-1);
-        let down = new Tile(this.x, this.y+1);
-        let left = new Tile(this.x-1, this.y);
-        let right = new Tile(this.x+1, this.y);
+        let up = new Pos(this.x, this.y-1);
+        let down = new Pos(this.x, this.y+1);
+        let left = new Pos(this.x-1, this.y);
+        let right = new Pos(this.x+1, this.y);
         return [up, down, left, right];
     }
 }
 
 
 class Colorama {
-    constructor(sizeCallback, colors) {
+    constructor(sizeCallback, colors, board) {
         this.sizeCallback = sizeCallback
         this.height = 0;
         this.width = 0;
         this.colors = colors;
-        this.board = [];
+        this.board = board;
+        this.tiles = [];
         this.frontier = [];
         this.color = null;
         this.clicks = 0;
@@ -79,21 +76,23 @@ class Colorama {
         let size = this.sizeCallback();
         this.width = size[0];
         this.height = size[1];
-        this.board = [];
+        this.tiles = [];
         for(let i = 0; i < this.height; i++) {
             let row = []
             for(let j = 0; j < this.width; j++) {
                 row.push(random(this.colors));
             }
-            this.board.push(row);
+            this.tiles.push(row);
         }
-        let startPos = new Tile(0,0);
-        this.color = this.board[startPos.x][startPos.y];
-        this.board[startPos.x][startPos.y] = null;
+        let startPos = new Pos(0,0);
+        this.color = this.tiles[startPos.x][startPos.y];
+        this.tiles[startPos.x][startPos.y] = null;
         this.frontier = this.neighbors(startPos);
         this.pick(this.color);
         this.clicks = 0;
         this.interactive = true;
+
+        this.board.initialize(this);
     }
 
     pick(color, callback) {
@@ -107,10 +106,10 @@ class Colorama {
             this.frontier = [];
             while(stack.length > 0) {
                 let tile = stack.pop();
-                if(this.board[tile.x][tile.y] === color) {
-                    this.board[tile.x][tile.y] = null;
+                if(this.tiles[tile.x][tile.y] === color) {
+                    this.tiles[tile.x][tile.y] = null;
                     stack.push(...this.neighbors(tile));
-                } else if(this.board[tile.x][tile.y] !== null) {
+                } else if(this.tiles[tile.x][tile.y] !== null) {
                     this.frontier.push(tile);
                 }
             }
@@ -123,7 +122,7 @@ class Colorama {
         return tile.neighbors().filter(tile => (
             tile.x >= 0 && tile.x < this.width &&
             tile.y >= 0 && tile.y < this.height &&
-            this.board[tile.x][tile.y] !== null
+            this.tiles[tile.x][tile.y] !== null
         ));
     }
 }
@@ -141,7 +140,7 @@ class Board {
             this.table_el.removeChild(this.table_el.lastChild);
         }
 
-        for(let row of colorama.board) {
+        for(let row of colorama.tiles) {
             let row_el = document.createElement("tr");
             for(let tile of row) {
                 let col_el = document.createElement("td");
@@ -175,8 +174,8 @@ class Board {
         this.table_el.style.backgroundColor = colorama.color;
 
         let row_els = this.table_el.querySelectorAll("tr");
-        for(let i = 0; i < colorama.board.length; i++) {
-            let row = colorama.board[i];
+        for(let i = 0; i < colorama.tiles.length; i++) {
+            let row = colorama.tiles[i];
             let row_el = row_els[i];
             for(let j = 0; j < row.length; j++) {
                 let color = row[j];
