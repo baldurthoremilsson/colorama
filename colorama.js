@@ -23,7 +23,8 @@ const COLORS = [
 const random = array => array[Math.floor(Math.random() * array.length)];
 
 document.addEventListener("DOMContentLoaded", () => {
-    const colorama = new Colorama(HEIGHT, WIDTH, COLORS);
+    const getSize = () => document.querySelector("#size-selector").value.split("x");
+    const colorama = new Colorama(getSize, COLORS);
     colorama.initialize();
 
     const board = new Board(
@@ -62,9 +63,10 @@ class Tile {
 
 
 class Colorama {
-    constructor(height, width, colors) {
-        this.height = height;
-        this.width = width;
+    constructor(sizeCallback, colors) {
+        this.sizeCallback = sizeCallback
+        this.height = 0;
+        this.width = 0;
         this.colors = colors;
         this.board = [];
         this.frontier = [];
@@ -74,6 +76,9 @@ class Colorama {
     }
 
     initialize() {
+        let size = this.sizeCallback();
+        this.width = size[0];
+        this.height = size[1];
         this.board = [];
         for(let i = 0; i < this.height; i++) {
             let row = []
