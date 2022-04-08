@@ -44,12 +44,40 @@ class Pos {
         this.y = y;
     }
 
+    toString() {
+        return `${this.x}:${this.y}`;
+    }
+
     neighbors() {
         let up = new Pos(this.x, this.y-1);
         let down = new Pos(this.x, this.y+1);
         let left = new Pos(this.x-1, this.y);
         let right = new Pos(this.x+1, this.y);
         return [up, down, left, right];
+    }
+}
+
+class Frontier {
+    constructor(...positions) {
+        this.positions = {};
+        this.push(...positions);
+    }
+
+    push(...positions) {
+        for(let pos of positions) {
+            this.positions[pos] = pos;
+        }
+    }
+
+    pop() {
+        const key = Object.keys(this.positions).pop()
+        const value = this.positions[key];
+        delete this.positions[key];
+        return value;
+    }
+
+    isEmpty() {
+        return Object.keys(this.positions).length === 0;
     }
 }
 
@@ -62,7 +90,7 @@ class Colorama {
         this.colors = colors;
         this.board = board;
         this.tiles = [];
-        this.frontier = [];
+        this.frontier = null;
         this.color = null;
         this.clicks = 0;
         this.interactive = false;
@@ -83,7 +111,7 @@ class Colorama {
         let startPos = new Pos(0,0);
         this.color = this.tiles[startPos.x][startPos.y];
         this.tiles[startPos.x][startPos.y] = null;
-        this.frontier = this.neighbors(startPos);
+        this.frontier = new Frontier(...this.neighbors(startPos));
         this.interactive = true;
         this.pick(this.color, true);
         this.clicks = 0;
@@ -102,8 +130,8 @@ class Colorama {
         this.color = color;
         setTimeout(() => {
             const stack = this.frontier;
-            this.frontier = [];
-            while(stack.length > 0) {
+            this.frontier = new Frontier();
+            while(!stack.isEmpty()) {
                 let tile = stack.pop();
                 if(this.tiles[tile.x][tile.y] === color) {
                     this.tiles[tile.x][tile.y] = null;
