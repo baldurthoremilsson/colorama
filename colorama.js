@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const colorama = new Colorama(getSize, COLORS, board);
     colorama.initialize();
 
+
     document.querySelector("#new-game").addEventListener("click", event => colorama.initialize());
     document.querySelector("#size-selector").addEventListener("change", event => colorama.initialize());
 });
@@ -41,11 +42,6 @@ class Pos {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-    }
-
-    valueOf() {
-        console.log("yolo");
-        return `${this.x}x${this.y}`;
     }
 
     neighbors() {
@@ -88,18 +84,18 @@ class Colorama {
         this.color = this.tiles[startPos.x][startPos.y];
         this.tiles[startPos.x][startPos.y] = null;
         this.frontier = this.neighbors(startPos);
-        this.pick(this.color);
-        this.clicks = 0;
         this.interactive = true;
+        this.pick(this.color, true);
+        this.clicks = 0;
 
         this.board.initialize(this);
     }
 
-    pick(color) {
+    pick(color, init) {
         if(!this.interactive) {
             return;
         }
-        if(this.color === color) {
+        if(this.color === color && !init) {
             return;
         }
         this.interactive = false;
