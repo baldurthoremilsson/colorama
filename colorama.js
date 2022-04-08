@@ -89,7 +89,7 @@ class Colorama {
         this.width = 0;
         this.colors = colors;
         this.board = board;
-        this.tiles = [];
+        this.tiles = null;
         this.frontier = null;
         this.color = null;
         this.clicks = 0;
@@ -100,17 +100,15 @@ class Colorama {
         let size = this.sizeCallback();
         this.width = size[0];
         this.height = size[1];
-        this.tiles = [];
+        this.tiles = {};
         for(let i = 0; i < this.height; i++) {
-            let row = []
             for(let j = 0; j < this.width; j++) {
-                row.push(random(this.colors));
+                this.tiles[new Pos(i,j)] = random(this.colors);
             }
-            this.tiles.push(row);
         }
         let startPos = new Pos(0,0);
-        this.color = this.tiles[startPos.x][startPos.y];
-        this.tiles[startPos.x][startPos.y] = null;
+        this.color = this.tiles[startPos];
+        this.tiles[startPos] = null;
         this.frontier = new Frontier(...this.neighbors(startPos));
         this.interactive = true;
         this.pick(this.color, true);
@@ -132,12 +130,12 @@ class Colorama {
             const stack = this.frontier;
             this.frontier = new Frontier();
             while(!stack.isEmpty()) {
-                let tile = stack.pop();
-                if(this.tiles[tile.x][tile.y] === color) {
-                    this.tiles[tile.x][tile.y] = null;
-                    stack.push(...this.neighbors(tile));
-                } else if(this.tiles[tile.x][tile.y] !== null) {
-                    this.frontier.push(tile);
+                let pos = stack.pop();
+                if(this.tiles[pos] === color) {
+                    this.tiles[pos] = null;
+                    stack.push(...this.neighbors(pos));
+                } else if(this.tiles[pos] !== null) {
+                    this.frontier.push(pos);
                 }
             }
             this.interactive = true;
@@ -145,11 +143,11 @@ class Colorama {
         this.clicks += 1;
     }
 
-    neighbors(tile) {
-        return tile.neighbors().filter(tile => (
-            tile.x >= 0 && tile.x < this.width &&
-            tile.y >= 0 && tile.y < this.height &&
-            this.tiles[tile.x][tile.y] !== null
+    neighbors(pos) {
+        return pos.neighbors().filter(pos => (
+            pos.x >= 0 && pos.x < this.width &&
+            pos.y >= 0 && pos.y < this.height &&
+            this.tiles[pos] !== null
         ));
     }
 }
@@ -167,14 +165,14 @@ class Board {
             this.table_el.removeChild(this.table_el.lastChild);
         }
 
-        for(let row of colorama.tiles) {
-            let row_el = document.createElement("tr");
-            for(let tile of row) {
-                let col_el = document.createElement("td");
-                col_el.style.backgroundColor = tile;
-                row_el.appendChild(col_el);
+        for(let y = 0; y < colorama.height; y++) {
+            let row = document.createElement("tr");
+            for(let x = 0; x < colorama.width; x++) {
+                let col = document.createElement("td");
+                col.style.backgroundColor = colorama.tiles[new Pos(x, y)];
+                row.appendChild(col);
             }
-            this.table_el.appendChild(row_el);
+            this.table_el.appendChild(row);
         }
 
         this.table_el.style.backgroundColor = colorama.color;
@@ -201,12 +199,11 @@ class Board {
         this.table_el.style.backgroundColor = colorama.color;
 
         let row_els = this.table_el.querySelectorAll("tr");
-        for(let i = 0; i < colorama.tiles.length; i++) {
-            let row = colorama.tiles[i];
-            let row_el = row_els[i];
-            for(let j = 0; j < row.length; j++) {
-                let color = row[j];
-                let cell_el = row_el.childNodes[j];
+        for(let y = 0; y < colorama.height; y++) {
+            let row_el = row_els[y];
+            for(let x = 0; x < colorama.width; x++) {
+                let color = colorama.tiles[new Pos(x, y)];
+                let cell_el = row_el.childNodes[x];
                 cell_el.style.backgroundColor = color;
             }
         }
