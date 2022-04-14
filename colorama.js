@@ -20,16 +20,30 @@ const COLORS = [
     "darkslateblue",
     "firebrick"
 ];
+const randomGenerator = (seed) => {
+    return () => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+    }
+}
+const stringToNum = (str) => str.split("").map(letter => letter.charCodeAt()).reduce((a,b) => a+b, 0)
 const random = array => array[Math.floor(Math.random() * array.length)];
 
 document.addEventListener("DOMContentLoaded", () => {
     const getSize = () => document.querySelector("#size-selector").value.split("x");
+    const getPicker = () => {
+        let boardSeed = document.querySelector("#board-seed").value;
+        console.log(`boardSeed(${boardSeed})`);
+        let seedNum = stringToNum(boardSeed);
+        let random = (seedNum === 0) ? Math.random : randomGenerator(seedNum);
+        return array => array[Math.floor(random() * array.length)];
+    }
     const board = new Board(
         document.querySelector("#game"),
         document.querySelector("#controls"),
         document.querySelector("#click-counter")
     );
-    const colorama = new Colorama(getSize, COLORS, board);
+    const colorama = new Colorama(getSize, getPicker, COLORS, board);
     colorama.initialize();
 
 
@@ -83,8 +97,9 @@ class Frontier {
 
 
 class Colorama {
-    constructor(sizeCallback, colors, board) {
+    constructor(sizeCallback, pickerCallback, colors, board) {
         this.sizeCallback = sizeCallback
+        this.pickerCallback = pickerCallback;
         this.height = 0;
         this.width = 0;
         this.colors = colors;
@@ -98,12 +113,13 @@ class Colorama {
 
     initialize() {
         let size = this.sizeCallback();
+        let picker = this.pickerCallback();
         this.width = size[0];
         this.height = size[1];
         this.tiles = {};
         for(let i = 0; i < this.height; i++) {
             for(let j = 0; j < this.width; j++) {
-                this.tiles[new Pos(i,j)] = random(this.colors);
+                this.tiles[new Pos(i,j)] = picker(this.colors);
             }
         }
         let startPos = new Pos(0,0);
