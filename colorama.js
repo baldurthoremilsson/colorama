@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     const colorama = new Colorama(getSize, getPicker, COLORS, board);
     colorama.initialize();
+    window.colorama = colorama;
 
 
     document.querySelector("#new-game").addEventListener("click", event => colorama.initialize());
@@ -102,9 +103,77 @@ class Frontier {
 }
 
 
-class Solver {
-    constructor(colorama) {
-        this.colorama = colorama;
+class GreedySolverState {
+    constructor(state, history) {
+        this.state = state;
+        this.history = history;
+        this.tilesLeft = state.tilesLeft;
+        this.children = null;
+    }
+
+    step() {
+        if(this.children === null) {
+            this.children = [];
+            let colors = new Set();
+            this.state.frontier.array().forEach(pos => colors.add(this.state.getColor(pos)));
+
+            for(let color of colors) {
+                let child = this.state.child(color);
+                let history = [...this.history, color];
+                this.children.push(new GreedySolverState(child, history));
+            }
+        } else {
+            for(let child of this.children) {
+                child.step();
+            }
+        }
+    }
+
+    minPath() {
+        let min = {
+            path: [this],
+            tilesLeft: this.tilesLeft,
+        };
+
+        if(this.children === null) {
+            return min;
+        }
+
+        for(let child of this.children) {
+            let childPath = child.minPath();
+            if(childPath.tilesLeft < min.tilesLeft) {
+                min = {
+                    path: [this, ...childPath.path],
+                    tilesLeft: childPath.tilesLeft,
+                };
+            }
+        }
+        return min;
+    }
+}
+
+
+class GreedySolver {
+    constructor(colorama, lookahead) {
+        this.lookahead = lookahead || 1;
+        this.root = new GreedySolverState(colorama, []);
+
+        for(let i = 0; i < this.lookahead; i++) {
+            this.root.step();
+        }
+    }
+
+    solve() {
+        while(true) {
+            let minPath = this.root.minPath();
+            window.minPath = minPath;
+            if(minPath.tilesLeft === 0) {
+                let lastState = minPath.path.pop();
+                return lastState.history;
+            }
+            this.root = minPath.path[1];
+            this.root.step();
+        }
     }
 }
 
@@ -122,6 +191,7 @@ class Colorama {
         this.color = null;
         this.clicks = 0;
         this.parent = null;
+        this.tilesLeft = 0;
     }
 
     initialize() {
@@ -135,10 +205,11 @@ class Colorama {
                 this.tiles[new Pos(i,j)] = picker(this.colors);
             }
         }
+        this.tilesLeft = this.width * this.height;
         let startPos = new Pos(0,0);
-        let color = this.tiles[startPos];
-        this.color = null;//this.tiles[startPos];
-        this.tiles[startPos] = null;
+        let color = this.getColor(startPos);
+        this.color = null;
+        this.removeColor(startPos);
         this.frontier = new Frontier(...this.neighbors(startPos));
         this.pick(color);
         this.clicks = 0;
@@ -150,6 +221,7 @@ class Colorama {
         this.parent = parent;
         this.width = parent.width;
         this.height = parent.height;
+        this.tilesLeft = parent.tilesLeft;
         this.tiles = {};
         this.color = parent.color;
         this.frontier = new Frontier(...parent.frontier.array());
@@ -166,6 +238,13 @@ class Colorama {
         return null;
     }
 
+    removeColor(pos) {
+        if(this.getColor(pos) !== null) {
+            this.tiles[pos] = null;
+            this.tilesLeft--;
+        }
+    }
+
     pick(color) {
         if(this.color === color) {
             return;
@@ -176,7 +255,7 @@ class Colorama {
         while(!stack.isEmpty()) {
             let pos = stack.pop();
             if(this.getColor(pos) === color) {
-                this.tiles[pos] = null;
+                this.removeColor(pos);
                 stack.push(...this.neighbors(pos));
             } else if(this.getColor(pos) !== null) {
                 this.frontier.push(pos);
