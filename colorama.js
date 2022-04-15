@@ -20,6 +20,8 @@ const COLORS = [
     "darkslateblue",
     "firebrick"
 ];
+const FADE_TIME = 100;
+
 const randomGenerator = (seed) => {
     return () => {
         seed = (seed * 9301 + 49297) % 233280;
@@ -93,6 +95,17 @@ class Frontier {
     isEmpty() {
         return Object.keys(this.positions).length === 0;
     }
+
+    array() {
+        return Object.values(this.positions);
+    }
+}
+
+
+class Solver {
+    constructor(colorama) {
+        this.colorama = colorama;
+    }
 }
 
 
@@ -108,7 +121,7 @@ class Colorama {
         this.frontier = null;
         this.color = null;
         this.clicks = 0;
-        this.interactive = false;
+        this.parent = null;
     }
 
     initialize() {
@@ -123,47 +136,72 @@ class Colorama {
             }
         }
         let startPos = new Pos(0,0);
-        this.color = this.tiles[startPos];
+        let color = this.tiles[startPos];
+        this.color = null;//this.tiles[startPos];
         this.tiles[startPos] = null;
         this.frontier = new Frontier(...this.neighbors(startPos));
-        this.interactive = true;
-        this.pick(this.color, true);
+        this.pick(color);
         this.clicks = 0;
 
         this.board.initialize(this);
     }
 
-    pick(color, init) {
-        if(!this.interactive) {
+    initializeChild(parent) {
+        this.parent = parent;
+        this.width = parent.width;
+        this.height = parent.height;
+        this.tiles = {};
+        this.color = parent.color;
+        this.frontier = new Frontier(...parent.frontier.array());
+        this.clicks = parent.clicks;
+    }
+
+    getColor(pos) {
+        if(this.tiles.hasOwnProperty(pos)) {
+            return this.tiles[pos];
+        }
+        if(this.parent !== null) {
+            return this.parent.getColor(pos);
+        }
+        return null;
+    }
+
+    pick(color) {
+        if(this.color === color) {
             return;
         }
-        if(this.color === color && !init) {
-            return;
-        }
-        this.interactive = false;
         this.color = color;
-        setTimeout(() => {
-            const stack = this.frontier;
-            this.frontier = new Frontier();
-            while(!stack.isEmpty()) {
-                let pos = stack.pop();
-                if(this.tiles[pos] === color) {
-                    this.tiles[pos] = null;
-                    stack.push(...this.neighbors(pos));
-                } else if(this.tiles[pos] !== null) {
-                    this.frontier.push(pos);
-                }
+        const stack = this.frontier;
+        this.frontier = new Frontier();
+        while(!stack.isEmpty()) {
+            let pos = stack.pop();
+            if(this.getColor(pos) === color) {
+                this.tiles[pos] = null;
+                stack.push(...this.neighbors(pos));
+            } else if(this.getColor(pos) !== null) {
+                this.frontier.push(pos);
             }
-            this.interactive = true;
-        }, 100);
+        }
         this.clicks += 1;
+    }
+
+    child(color) {
+        const child = new Colorama(
+            this.sizeCallback,
+            this.pickerCallback,
+            this.colors,
+            this.board
+        );
+        child.initializeChild(this);
+        child.pick(color);
+        return child;
     }
 
     neighbors(pos) {
         return pos.neighbors().filter(pos => (
             pos.x >= 0 && pos.x < this.width &&
             pos.y >= 0 && pos.y < this.height &&
-            this.tiles[pos] !== null
+            this.getColor(pos) !== null
         ));
     }
 }
@@ -174,9 +212,12 @@ class Board {
         this.table_el = table_el;
         this.controls_el = controls_el;
         this.click_counter_el = click_counter_el;
+        this.interactive = false;
+        this.colorama = null;
     }
 
     initialize(colorama) {
+        this.colorama = colorama;
         while(this.table_el.lastChild) {
             this.table_el.removeChild(this.table_el.lastChild);
         }
@@ -192,6 +233,7 @@ class Board {
         }
 
         this.table_el.style.backgroundColor = colorama.color;
+        this.table_el.style.transitionDuration = `${FADE_TIME}ms`;
 
         while(this.controls_el.lastChild) {
             this.controls_el.removeChild(this.controls_el.lastChild);
@@ -202,28 +244,39 @@ class Board {
             button.classList.add("button");
             button.style.backgroundColor = color;
             button.addEventListener("click", event => {
+                if(!this.interactive) {
+                    return;
+                }
+                this.interactive = false;
+                this.setColor(color);
                 colorama.pick(color);
-                this.update(colorama);
+                setTimeout(() => {
+                    this.updateTiles()
+                    this.interactive = true;
+                }, FADE_TIME);
             });
             this.controls_el.appendChild(button);
         }
 
         this.click_counter_el.innerHTML = `Skref: 0`;
+        this.interactive = true;
     }
 
-    update(colorama) {
-        this.table_el.style.backgroundColor = colorama.color;
+    setColor(color) {
+        this.table_el.style.backgroundColor = color;
+    }
 
+    updateTiles() {
         let row_els = this.table_el.querySelectorAll("tr");
-        for(let y = 0; y < colorama.height; y++) {
+        for(let y = 0; y < this.colorama.height; y++) {
             let row_el = row_els[y];
-            for(let x = 0; x < colorama.width; x++) {
-                let color = colorama.tiles[new Pos(x, y)];
+            for(let x = 0; x < this.colorama.width; x++) {
+                let color = this.colorama.getColor(new Pos(x, y));
                 let cell_el = row_el.childNodes[x];
                 cell_el.style.backgroundColor = color;
             }
         }
 
-        this.click_counter_el.innerHTML = `Skref: ${colorama.clicks}`;
+        this.click_counter_el.innerHTML = `Skref: ${this.colorama.clicks}`;
     }
 }
