@@ -7,18 +7,7 @@ const COLORS = [
     "blue",
     "purple",
     "orange",
-    "pink",];x=[
-    "black",
-    "gray",
-    "white",
-    "brown",
-    "mediumspringgreen",
-    "olive",
-    "seagreen",
-    "maroon",
-    "magenta",
-    "darkslateblue",
-    "firebrick"
+    "pink",
 ];
 const FADE_TIME = 100;
 
@@ -31,6 +20,11 @@ const randomGenerator = (seed) => {
 
 document.addEventListener("DOMContentLoaded", () => {
     const boardSeed_el = document.querySelector("#board-seed");
+    const generateRandomBoard = () => {
+        let randomString = Math.random().toString(16).substring(2, 10);
+        boardSeed_el.value = randomString;
+        colorama.initialize();
+    }
     const getSize = () => document.querySelector("#size-selector").value.split("x");
     const getPicker = () => {
         let boardSeed = boardSeed_el.value;
@@ -50,16 +44,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelector("#click-counter")
     );
     const colorama = new Colorama(getSize, getPicker, COLORS, board);
-    colorama.initialize();
+    generateRandomBoard();
     window.colorama = colorama;
 
 
-    document.querySelector("#new-game").addEventListener("click", event => colorama.initialize());
-    document.querySelector("#random-game").addEventListener("click", event => {
-        let randomString = Math.random().toString(16).substring(2, 10);
-        boardSeed_el.value = randomString;
-        colorama.initialize();
-    })
+    document.querySelector("#restart").addEventListener("click", event => colorama.initialize());
+    document.querySelector("#new-game").addEventListener("click", event => generateRandomBoard());
     document.querySelector("#size-selector").addEventListener("change", event => colorama.initialize());
 });
 
@@ -186,9 +176,9 @@ class GreedySolver {
     }
 }
 
-function getPar(colorama) {
-    let min = 100;
-    for(let i = 1; i < 5; i++) {
+function calculatePar(colorama) {
+    let min = 999999;
+    for(let i = 1; i < 4; i++) {
         let solver = new GreedySolver(colorama, i);
         let steps = solver.solve().length;
         if(steps < min) {
@@ -319,7 +309,7 @@ class Board {
     initialize(colorama) {
         document.querySelector("#par").innerHTML = "Reikna...";
         setTimeout(function() {
-            let par = getPar(colorama);
+            let par = calculatePar(colorama);
             document.querySelector("#par").innerHTML = par;
         },0);
         this.colorama = colorama;
