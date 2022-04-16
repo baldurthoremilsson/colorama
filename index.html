@@ -28,14 +28,24 @@
     </table>
     <div id="controls"></div>
     <div id="click-counter"></div>
-    <select id="size-selector">
-        <option value="10x10">10x10</option>
-        <option value="15x15">15x15</option>
-        <option value="20x20">20x20</option>
-        <option value="30x30">30x30</option>
-    </select>
-    <input id="board-seed">
-    <br><br><br><br>
-    <div id="new-game">Nýjan leik</div>
+    <table>
+        <tr>
+            <td>Stærð</td>
+            <td>
+                <select id="size-selector">
+                    <option value="10x10">10x10</option>
+                    <option value="15x15">15x15</option>
+                    <option value="20x20">20x20</option>
+                    <option value="30x30">30x30</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Einkenni borðs</td>
+            <td><input id="board-seed"></td>
+        </tr>
+    </table>
+    <button id="new-game">Nýjan leik frá einkenni</button>
+    <button id="random-game">Leik af handahófi</button>
   </body>
 </html>

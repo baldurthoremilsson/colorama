@@ -28,16 +28,20 @@ const randomGenerator = (seed) => {
         return seed / 233280;
     }
 }
-const stringToNum = (str) => str.split("").map(letter => letter.charCodeAt()).reduce((a,b) => a+b, 0)
-const random = array => array[Math.floor(Math.random() * array.length)];
 
 document.addEventListener("DOMContentLoaded", () => {
+    const boardSeed_el = document.querySelector("#board-seed");
     const getSize = () => document.querySelector("#size-selector").value.split("x");
     const getPicker = () => {
-        let boardSeed = document.querySelector("#board-seed").value;
-        console.log(`boardSeed(${boardSeed})`);
-        let seedNum = stringToNum(boardSeed);
-        let random = (seedNum === 0) ? Math.random : randomGenerator(seedNum);
+        let boardSeed = boardSeed_el.value;
+        let random = Math.random;
+        if(boardSeed.length !== 0) {
+            random = randomGenerator(0);
+            boardSeed.split("").map(letter => letter.charCodeAt()).forEach(num => {
+                let seed = num + random() * 1000;
+                random = randomGenerator(seed);
+            });
+        }
         return array => array[Math.floor(random() * array.length)];
     }
     const board = new Board(
@@ -51,6 +55,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     document.querySelector("#new-game").addEventListener("click", event => colorama.initialize());
+    document.querySelector("#random-game").addEventListener("click", event => {
+        let randomString = Math.random().toString(16).substring(2, 10);
+        boardSeed_el.value = randomString;
+        colorama.initialize();
+    })
     document.querySelector("#size-selector").addEventListener("change", event => colorama.initialize());
 });
 
