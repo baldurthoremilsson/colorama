@@ -186,6 +186,18 @@ class GreedySolver {
     }
 }
 
+function getPar(colorama) {
+    let min = 100;
+    for(let i = 1; i < 5; i++) {
+        let solver = new GreedySolver(colorama, i);
+        let steps = solver.solve().length;
+        if(steps < min) {
+            min = steps;
+        }
+    }
+    return min;
+}
+
 
 class Colorama {
     constructor(sizeCallback, pickerCallback, colors, board) {
@@ -305,6 +317,11 @@ class Board {
     }
 
     initialize(colorama) {
+        document.querySelector("#par").innerHTML = "Reikna...";
+        setTimeout(function() {
+            let par = getPar(colorama);
+            document.querySelector("#par").innerHTML = par;
+        },0);
         this.colorama = colorama;
         while(this.table_el.lastChild) {
             this.table_el.removeChild(this.table_el.lastChild);
